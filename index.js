@@ -1,5 +1,7 @@
-// WebSocket接続
-const ws = new WebSocket('ws://localhost:3000');
+// 環境に応じてWebSocket URLを自動で切り替える
+const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const socket = new WebSocket(`${protocol}://${window.location.host}`);
+
 let uuid = null;
 
 // メッセージ受信処理
