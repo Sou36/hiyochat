@@ -29,21 +29,23 @@ document.getElementById('videoInput').addEventListener('change', async function 
       method: 'POST',
       body: formData
     });
-    const data = await res.json();
+
+    const data = await res.json(); // ← ここが失敗すると json is not defined になる
 
     const now = new Date();
-    const json = {
+    const videoMessage = {
       name: document.getElementById('nameInput').value,
       time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
       videoUrl: data.url,
-      uuid: myUuid
+      uuid: myUuid // 自分のUUIDを付ける（必須）
     };
 
-    socket.send(JSON.stringify(json));
+    socket.send(JSON.stringify(videoMessage)); // ← ここでエラーになってた
   } catch (err) {
     console.error('アップロード失敗:', err);
   }
 });
+
 if (json.videoUrl) {
   const video = document.createElement('video');
   video.src = json.videoUrl;
@@ -131,19 +133,30 @@ function createMessage(json) {
   const sideTextElement = createDiv(`${side}-text`);
   const timeElement = createDiv('time');
   const nameElement = createDiv('name');
-  const textElement = createDiv('text');
 
   timeElement.textContent = json.time;
   nameElement.textContent = json.name;
-  textElement.textContent = json.message;
 
   sideTextElement.appendChild(timeElement);
   sideTextElement.appendChild(nameElement);
-  sideTextElement.appendChild(textElement);
-  sideElement.appendChild(sideTextElement);
 
+  // メッセージ or 動画のどちらか
+  if (json.videoUrl) {
+    const video = document.createElement('video');
+    video.src = json.videoUrl;
+    video.controls = true;
+    video.style.maxWidth = '200px';
+    sideTextElement.appendChild(video);
+  } else if (json.message) {
+    const textElement = createDiv('text');
+    textElement.textContent = json.message;
+    sideTextElement.appendChild(textElement);
+  }
+
+  sideElement.appendChild(sideTextElement);
   return sideElement;
 }
+
 
 function createDiv(className) {
   const element = document.createElement('div');
