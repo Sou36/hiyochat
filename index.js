@@ -1,11 +1,11 @@
-// 環境に応じてWebSocket URLを自動で切り替える
+// ここ修正した
 const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 const socket = new WebSocket(`${protocol}://${window.location.host}`);
 
 let uuid = null;
 
-// メッセージ受信処理
-ws.onmessage = (event) => {
+//  修正: ws → socket にする
+socket.onmessage = (event) => {
   const json = JSON.parse(event.data);
   console.log(json);
   if (json.uuid) {
@@ -17,7 +17,7 @@ ws.onmessage = (event) => {
   }
 };
 
-// メッセージ送信処理
+//  修正: ws → socket にする
 function sendMessage() {
   const now = new Date();
   const json = {
@@ -25,10 +25,10 @@ function sendMessage() {
     message: document.getElementById('msgInput').value,
     time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
   };
-  // メッセージ送信
-  ws.send(JSON.stringify(json));
+  socket.send(JSON.stringify(json));
   document.getElementById('msgInput').value = '';
 }
+
 
 // ここから下はDOM生成処理（メッセージ受信後のDOM生成）
 function createMessage(json) {
