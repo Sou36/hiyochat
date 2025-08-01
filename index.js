@@ -73,8 +73,9 @@ socket.onmessage = async (event) => {
 
   // UUID 未保存なら復元
   if (!myUuid) {
-    myUuid = localStorage.getItem('myUuid');
-  }
+  myUuid = crypto.randomUUID();
+  localStorage.setItem('myUuid', myUuid);
+}
 
   // 自分の発言か判定
   json.mine = (json.uuid === myUuid);
