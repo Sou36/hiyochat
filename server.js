@@ -1,56 +1,76 @@
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
+const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); 
+
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-const multer = require('multer');
-const fs = require('fs');
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+
+const historyPath = path.join(__dirname, 'history.json');
+
+// 初期化：履歴ファイルがなければ空配列で作る
+if (!fs.existsSync(historyPath)) {
+  fs.writeFileSync(historyPath, '[]');
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const name = Date.now() + ext;
-    cb(null, name);
+// 履歴を読み込む関数
+function loadHistory() {
+  try {
+    return JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+  } catch {
+    return [];
   }
-});
+}
 
-const upload = multer({ storage });
+// 履歴に追加・保存
+function saveMessage(msg) {
+  const history = loadHistory();
+  history.push(msg);
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+}
 
-// 静的ファイル（アップロードされた動画も）を公開
-app.use('/uploads', express.static(uploadDir));
+wss.on('connection', (ws) => {
+  // 接続時に履歴を送信
+  const history = loadHistory();
+  history.forEach(msg => ws.send(JSON.stringify(msg)));
 
-// アップロード処理
-app.post('/upload', upload.single('video'), (req, res) => {
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl });
-});
-app.use(express.static(path.join(__dirname, '.')));
+  // UUIDを渡す
+  const uuid = crypto.randomUUID();
+  ws.send(JSON.stringify({ uuid }));
 
-wss.on('connection', function connection(ws) {
-  const clientId = uuidv4(); // 各クライアントに一意のIDを割り当て
-  ws.send(JSON.stringify({ uuid: clientId })); // 最初にクライアントにIDを送信
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
 
-  ws.on('message', function incoming(message) {
-    const json = JSON.parse(message);
-    json.uuid = clientId; // 送信者のIDを付加して、みんなに配信
-
-    wss.clients.forEach(function each(client) {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(json));
-      }
-    });
+      saveMessage(msg); // サーバーに保存
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(msg));
+        }
+      });
+    } catch (err) {
+      console.error('メッセージ処理エラー:', err);
+    }
   });
 });
 
+app.use(express.static('public')); // クライアントのHTML/CSS/JSが入るフォルダ
+
+// 動画などアップロード対応（すでに実装済みならそのまま使ってOK）
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+
+app.post('/upload', upload.single('video'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'ファイルなし' });
+  const videoUrl = `/uploads/${req.file.filename}`;
+  res.json({ url: videoUrl });
+});
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
