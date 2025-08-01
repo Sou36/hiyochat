@@ -1,28 +1,24 @@
-const WebSocket = require('ws');
+const express = require('express');
 const http = require('http');
-const crypto = require('crypto');
+const WebSocket = require('ws');
+const path = require('path');
 
-// WebSocketのサーバ作成
-const server = http.createServer();
+const app = express();
+const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// WebSocket接続, ws が接続したクライアント
-wss.on('connection', (ws) => {
-  // クライアント識別子、今回は使わない...
-  const uuid = crypto.randomUUID();
-  ws.send(JSON.stringify({ uuid }));
+// 静的ファイル（index.htmlやindex.css）を配信
+app.use(express.static(path.join(__dirname, '.')));
 
-  // メッセージ受信処理
-  ws.on('message', (data) => {
-    const json = JSON.parse(data);
-    if (!json.message) return;
-    // WebSocket 接続中のクライアント対象にメッセージ送信
-    wss.clients.forEach((client) => {
-      // メッセージ送信先クライアントがメッセージ受信クライアントの判定を設定
-      json.mine = ws === client;
+// WebSocketの処理（例）
+wss.on('connection', function connection(ws) {
+  console.log('A client connected');
+  ws.on('message', function incoming(message) {
+    console.log('received: %s', message);
+    // 受信したメッセージを全員に送信
+    wss.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
-        // メッセージを送信
-        client.send(JSON.stringify(json));
+        client.send(message);
       }
     });
   });
@@ -32,5 +28,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-
