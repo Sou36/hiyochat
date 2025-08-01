@@ -3,39 +3,11 @@ const socket = new WebSocket(`${protocol}://${window.location.host}`);
 
 let myUuid = null;
 
-socket.onmessage = async (event) => {
-  let json;
-
-  if (event.data instanceof Blob) {
-    const text = await event.data.text();
-    json = JSON.parse(text);
-  } else {
-    json = JSON.parse(event.data);
-  }
-
-  // 初回接続時にサーバーから送られてくるUUIDを保存
-  if (json.uuid && !json.name && !json.message) {
-    myUuid = json.uuid;
-    localStorage.setItem('myUuid', myUuid);
-    return;
-  }
-
-  // 自分のUUIDを復元
-  if (!myUuid) {
-    myUuid = localStorage.getItem('myUuid');
-  }
-
-  // 自分のUUIDと一致しているなら、自分の発言
-  json.mine = (json.uuid === myUuid);
-
-  // 表示と保存
-  saveMessage(json);
-  displayMessage(json);
-};
-
-
+// 自分のUUIDを保存・復元
 window.onload = () => {
   loadMessages();
+
+  myUuid = localStorage.getItem('myUuid');
 
   const msgInput = document.getElementById('msgInput');
   msgInput.addEventListener('keydown', function (event) {
@@ -62,13 +34,23 @@ socket.onmessage = async (event) => {
 
   console.log(json);
 
-  if (json.uuid) {
-    uuid = json.uuid;
-  } else {
-    json.mine = false;
-    saveMessage(json);
-    displayMessage(json);
+  // UUIDの初回受信
+  if (json.uuid && !json.name && !json.message) {
+    myUuid = json.uuid;
+    localStorage.setItem('myUuid', myUuid);
+    return;
   }
+
+  // UUID未取得だったら復元
+  if (!myUuid) {
+    myUuid = localStorage.getItem('myUuid');
+  }
+
+  // 自分の発言かどうか判定
+  json.mine = (json.uuid === myUuid);
+
+  saveMessage(json);
+  displayMessage(json);
 };
 
 function sendMessage() {
@@ -79,15 +61,9 @@ function sendMessage() {
     time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`
   };
 
-  // WebSocket でサーバーに送信
   socket.send(JSON.stringify(json));
-
-  // 入力欄をクリア
   document.getElementById('msgInput').value = '';
 }
-
-
-
 
 function displayMessage(json) {
   const chatDiv = document.getElementById('chat');
