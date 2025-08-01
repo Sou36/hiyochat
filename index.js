@@ -120,37 +120,6 @@ function loadMessages() {
   const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
   history.forEach(displayMessage);
 }
-window.onload = async () => {
-  loadMessagesFromServer();
-
-  myUuid = localStorage.getItem('myUuid');
-  if (!myUuid) {
-    myUuid = crypto.randomUUID();
-    localStorage.setItem('myUuid', myUuid);
-  }
-
-  const msgInput = document.getElementById('msgInput');
-  msgInput.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage();
-    }
-  });
-};
-
-// サーバーから履歴を取得
-async function loadMessagesFromServer() {
-  try {
-    const res = await fetch('/messages');
-    const messages = await res.json();
-    messages.forEach(msg => {
-      msg.mine = msg.uuid === myUuid;
-      displayMessage(msg);
-    });
-  } catch (err) {
-    console.error('履歴の読み込みに失敗しました:', err);
-  }
-}
 
 // ===== 表示用要素生成 =====
 function createMessage(json) {
