@@ -10,18 +10,12 @@ const wss = new WebSocket.Server({ server });
 app.use(express.static(path.join(__dirname, '.')));
 
 wss.on('connection', function connection(ws) {
-  console.log('A client connected');
-
-  const { v4: uuidv4 } = require('uuid'); // 追加
-// npm install uuid しておいてね
-
-wss.on('connection', function connection(ws) {
-  const clientId = uuidv4(); // 一人ひとりにIDを割り当て
-  ws.send(JSON.stringify({ uuid: clientId }));
+  const clientId = uuidv4(); // 各クライアントに一意のIDを割り当て
+  ws.send(JSON.stringify({ uuid: clientId })); // 最初にクライアントにIDを送信
 
   ws.on('message', function incoming(message) {
     const json = JSON.parse(message);
-    json.uuid = clientId; // メッセージに送信者のIDを追加して送り返す
+    json.uuid = clientId; // 送信者のIDを付加して、みんなに配信
 
     wss.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
@@ -29,8 +23,6 @@ wss.on('connection', function connection(ws) {
       }
     });
   });
-});
-
 });
 
 const PORT = process.env.PORT || 3000;

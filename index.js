@@ -13,21 +13,26 @@ socket.onmessage = async (event) => {
     json = JSON.parse(event.data);
   }
 
+  // 初回接続時にサーバーから送られてくるUUIDを保存
   if (json.uuid && !json.name && !json.message) {
-    // 初回のみ、自分のUUIDとして保存
     myUuid = json.uuid;
     localStorage.setItem('myUuid', myUuid);
     return;
   }
 
+  // 自分のUUIDを復元
   if (!myUuid) {
     myUuid = localStorage.getItem('myUuid');
   }
 
+  // 自分のUUIDと一致しているなら、自分の発言
   json.mine = (json.uuid === myUuid);
+
+  // 表示と保存
   saveMessage(json);
   displayMessage(json);
 };
+
 
 window.onload = () => {
   loadMessages();
@@ -72,11 +77,13 @@ function sendMessage() {
     name: document.getElementById('nameInput').value,
     message: document.getElementById('msgInput').value,
     time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+    // uuid は入れない！
   };
 
   socket.send(JSON.stringify(json));
   document.getElementById('msgInput').value = '';
 }
+
 
 
 function displayMessage(json) {
