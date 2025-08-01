@@ -46,16 +46,7 @@ document.getElementById('videoInput').addEventListener('change', async function 
   }
 });
 
-if (json.videoUrl) {
-  const video = document.createElement('video');
-  video.src = json.videoUrl;
-  video.controls = true;
-  video.style.maxWidth = '200px';
-  sideTextElement.appendChild(video);
-} else {
-  textElement.textContent = json.message;
-  sideTextElement.appendChild(textElement);
-}
+
 
 socket.onopen = () => {
   console.log("WebSocket connected");
