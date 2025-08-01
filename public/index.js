@@ -161,8 +161,10 @@ function createMessage(json) {
   const textElement = createDiv('text');
   textElement.textContent = json.message;
   sideTextElement.appendChild(textElement);
+  
 }
-
+ sideElement.appendChild(sideTextElement);
+  return sideElement; // ← これがなかった！
 }
 
 // ===== 汎用的な div 作成 =====
