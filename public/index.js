@@ -19,34 +19,61 @@ window.onload = () => {
 };
 
 // ===== 動画ファイル選択時の処理 =====
-document.getElementById('videoInput').addEventListener('change', async function () {
+let selectedFile = null;
+
+document.getElementById('fileInput').addEventListener('change', function () {
   const file = this.files[0];
-  if (!file || !file.type.startsWith('video/')) return;
-
-  const formData = new FormData();
-  formData.append('video', file);
-
-  try {
-    const res = await fetch('/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    const data = await res.json();
-
-    const now = new Date();
-    const videoMessage = {
-      name: document.getElementById('nameInput').value,
-      time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-      videoUrl: data.url,
-      uuid: myUuid
-    };
-
-    socket.send(JSON.stringify(videoMessage));
-  } catch (err) {
-    console.error('アップロード失敗:', err);
-  }
+  selectedFile = file || null;
 });
+
+async function send() {
+  const name = document.getElementById('nameInput').value;
+  const messageText = document.getElementById('msgInput').value.trim();
+  const now = new Date();
+  const time = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+  const uuid = myUuid;
+
+  // メッセージ送信
+  if (messageText !== '') {
+    const msg = { name, message: messageText, time, uuid };
+    socket.send(JSON.stringify(msg));
+    document.getElementById('msgInput').value = '';
+  }
+
+  // ファイル送信（画像 or 動画）
+  if (selectedFile && (selectedFile.type.startsWith('image/') || selectedFile.type.startsWith('video/'))) {
+    const formData = new FormData();
+    formData.append('video', selectedFile); // ← サーバーは共通で受け取れる
+
+    try {
+      const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      const fileMessage = {
+        name,
+        time,
+        uuid
+      };
+
+      if (selectedFile.type.startsWith('image/')) {
+        fileMessage.imageUrl = data.url;
+      } else if (selectedFile.type.startsWith('video/')) {
+        fileMessage.videoUrl = data.url;
+      }
+
+      socket.send(JSON.stringify(fileMessage));
+      selectedFile = null;
+      document.getElementById('fileInput').value = ''; // inputを初期化
+    } catch (err) {
+      console.error('アップロード失敗:', err);
+    }
+  }
+}
+
+
 
 // ===== WebSocket 接続成功時 =====
 socket.onopen = () => {
@@ -84,22 +111,6 @@ socket.onmessage = async (event) => {
   displayMessage(json);
 };
 
-// ===== テキスト送信処理 =====
-function sendMessage() {
-  const messageText = document.getElementById('msgInput').value.trim();
-  if (messageText === '') return;
-
-  const now = new Date();
-  const json = {
-    name: document.getElementById('nameInput').value,
-    message: messageText,
-    time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-    uuid: myUuid
-  };
-
-  socket.send(JSON.stringify(json));
-  document.getElementById('msgInput').value = '';
-}
 
 // ===== メッセージ表示処理 =====
 function displayMessage(json) {
@@ -135,20 +146,23 @@ function createMessage(json) {
   sideTextElement.appendChild(nameElement);
 
   // 動画またはテキストメッセージを表示
-  if (json.videoUrl) {
-    const video = document.createElement('video');
-    video.src = json.videoUrl;
-    video.controls = true;
-    video.style.maxWidth = '200px';
-    sideTextElement.appendChild(video);
-  } else if (json.message) {
-    const textElement = createDiv('text');
-    textElement.textContent = json.message;
-    sideTextElement.appendChild(textElement);
-  }
+  if (json.imageUrl) {
+  const img = document.createElement('img');
+  img.src = json.imageUrl;
+  img.style.maxWidth = '200px';
+  sideTextElement.appendChild(img);
+} else if (json.videoUrl) {
+  const video = document.createElement('video');
+  video.src = json.videoUrl;
+  video.controls = true;
+  video.style.maxWidth = '200px';
+  sideTextElement.appendChild(video);
+} else if (json.message) {
+  const textElement = createDiv('text');
+  textElement.textContent = json.message;
+  sideTextElement.appendChild(textElement);
+}
 
-  sideElement.appendChild(sideTextElement);
-  return sideElement;
 }
 
 // ===== 汎用的な div 作成 =====
