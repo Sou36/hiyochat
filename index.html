@@ -7,20 +7,23 @@
     <link rel="stylesheet" href="index.css" type="text/css" />
   </head>
   <body>
-    <div class="container">
-      <div class="title">チャット</div>
-      <div class="contents scroll" id="chat">
-      <div class="contents input">
-        <div>
-          <input class="name" type="text" id="nameInput" placeholder="name" />
-        </div>
-        <div>
-          <input class="msg" type="text" id="msgInput" placeholder="message" />
-        </div>
-        <button onclick="sendMessage()">Send</button>
+  <div class="container">
+    <div class="title">チャット</div>
+    <div class="contents scroll" id="chat"></div>
+
+    <div class="contents input">
+      <div>
+        <input class="name" type="text" id="nameInput" placeholder="name" />
       </div>
+      <div>
+        <input class="msg" type="text" id="msgInput" placeholder="message" />
+      </div>
+      <button onclick="sendMessage()">Send</button>
     </div>
-    <script src="index.js"></script>
-  </body>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+
 </html>
 

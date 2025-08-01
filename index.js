@@ -7,8 +7,16 @@ socket.onopen = () => {
   console.log("WebSocket connected");
 };
 
-socket.onmessage = (event) => {
-  const json = JSON.parse(event.data);
+socket.onmessage = async (event) => {
+  let json;
+
+  if (event.data instanceof Blob) {
+    const text = await event.data.text(); // ← ここでBlobをテキストに変換
+    json = JSON.parse(text);
+  } else {
+    json = JSON.parse(event.data);
+  }
+
   console.log(json);
 
   if (json.uuid) {
@@ -19,6 +27,7 @@ socket.onmessage = (event) => {
     chatDiv.scrollTo(0, chatDiv.scrollHeight);
   }
 };
+
 
 function sendMessage() {
   const now = new Date();
