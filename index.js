@@ -54,16 +54,22 @@ socket.onmessage = async (event) => {
 };
 
 function sendMessage() {
+  const messageText = document.getElementById('msgInput').value.trim();
+  if (messageText === '') {
+    return; // 空メッセージは送信しない
+  }
+
   const now = new Date();
   const json = {
     name: document.getElementById('nameInput').value,
-    message: document.getElementById('msgInput').value,
+    message: messageText,
     time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`
   };
 
   socket.send(JSON.stringify(json));
   document.getElementById('msgInput').value = '';
 }
+
 
 function displayMessage(json) {
   const chatDiv = document.getElementById('chat');
