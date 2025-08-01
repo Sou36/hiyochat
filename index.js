@@ -76,13 +76,16 @@ function sendMessage() {
   const json = {
     name: document.getElementById('nameInput').value,
     message: document.getElementById('msgInput').value,
-    time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-    // uuid は入れない！
+    time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`
   };
 
+  // WebSocket でサーバーに送信
   socket.send(JSON.stringify(json));
+
+  // 入力欄をクリア
   document.getElementById('msgInput').value = '';
 }
+
 
 
 
