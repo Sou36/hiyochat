@@ -3,6 +3,18 @@ const socket = new WebSocket(`${protocol}://${window.location.host}`);
 
 let uuid = null;
 
+window.onload = () => {
+  loadMessages();
+
+  const msgInput = document.getElementById('msgInput');
+  msgInput.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+};
+
 socket.onopen = () => {
   console.log("WebSocket connected");
 };
@@ -11,7 +23,7 @@ socket.onmessage = async (event) => {
   let json;
 
   if (event.data instanceof Blob) {
-    const text = await event.data.text(); // ← ここでBlobをテキストに変換
+    const text = await event.data.text();
     json = JSON.parse(text);
   } else {
     json = JSON.parse(event.data);
@@ -22,12 +34,11 @@ socket.onmessage = async (event) => {
   if (json.uuid) {
     uuid = json.uuid;
   } else {
-    const chatDiv = document.getElementById('chat');
-    chatDiv.appendChild(createMessage(json));
-    chatDiv.scrollTo(0, chatDiv.scrollHeight);
+    json.mine = false;
+    saveMessage(json);
+    displayMessage(json);
   }
 };
-
 
 function sendMessage() {
   const now = new Date();
@@ -35,9 +46,31 @@ function sendMessage() {
     name: document.getElementById('nameInput').value,
     message: document.getElementById('msgInput').value,
     time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+    mine: true,
   };
-  socket.send(JSON.stringify(json));
+
+  socket.send(JSON.stringify(json)); // ← ここ修正！
   document.getElementById('msgInput').value = '';
+
+  saveMessage(json);
+  displayMessage(json);
+}
+
+function displayMessage(json) {
+  const chatDiv = document.getElementById('chat');
+  chatDiv.appendChild(createMessage(json));
+  chatDiv.scrollTo(0, chatDiv.scrollHeight);
+}
+
+function saveMessage(json) {
+  const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+  history.push(json);
+  localStorage.setItem('chatHistory', JSON.stringify(history));
+}
+
+function loadMessages() {
+  const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+  history.forEach(displayMessage);
 }
 
 function createMessage(json) {
