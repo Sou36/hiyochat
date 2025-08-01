@@ -130,6 +130,17 @@ function createMessage(json) {
 
   sideTextElement.appendChild(timeElement);
   sideTextElement.appendChild(nameElement);
+  if (json.videoUrl) {
+  const video = document.createElement('video');
+  video.src = json.videoUrl;
+  video.controls = true;
+  video.style.maxWidth = '200px';
+  sideTextElement.appendChild(video);
+} else {
+  textElement.textContent = json.message;
+  sideTextElement.appendChild(textElement);
+}
+
 
   // メッセージ or 動画のどちらか
   if (json.videoUrl) {
