@@ -17,6 +17,43 @@ window.onload = () => {
     }
   });
 };
+document.getElementById('videoInput').addEventListener('change', async function () {
+  const file = this.files[0];
+  if (!file || !file.type.startsWith('video/')) return;
+
+  const formData = new FormData();
+  formData.append('video', file);
+
+  try {
+    const res = await fetch('/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+
+    const now = new Date();
+    const json = {
+      name: document.getElementById('nameInput').value,
+      time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+      videoUrl: data.url,
+      uuid: myUuid
+    };
+
+    socket.send(JSON.stringify(json));
+  } catch (err) {
+    console.error('アップロード失敗:', err);
+  }
+});
+if (json.videoUrl) {
+  const video = document.createElement('video');
+  video.src = json.videoUrl;
+  video.controls = true;
+  video.style.maxWidth = '200px';
+  sideTextElement.appendChild(video);
+} else {
+  textElement.textContent = json.message;
+  sideTextElement.appendChild(textElement);
+}
 
 socket.onopen = () => {
   console.log("WebSocket connected");
