@@ -1,7 +1,33 @@
 const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 const socket = new WebSocket(`${protocol}://${window.location.host}`);
 
-let uuid = null;
+let myUuid = null;
+
+socket.onmessage = async (event) => {
+  let json;
+
+  if (event.data instanceof Blob) {
+    const text = await event.data.text();
+    json = JSON.parse(text);
+  } else {
+    json = JSON.parse(event.data);
+  }
+
+  if (json.uuid && !json.name && !json.message) {
+    // 初回のみ、自分のUUIDとして保存
+    myUuid = json.uuid;
+    localStorage.setItem('myUuid', myUuid);
+    return;
+  }
+
+  if (!myUuid) {
+    myUuid = localStorage.getItem('myUuid');
+  }
+
+  json.mine = (json.uuid === myUuid);
+  saveMessage(json);
+  displayMessage(json);
+};
 
 window.onload = () => {
   loadMessages();
@@ -46,15 +72,12 @@ function sendMessage() {
     name: document.getElementById('nameInput').value,
     message: document.getElementById('msgInput').value,
     time: `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-    mine: true,
   };
 
-  socket.send(JSON.stringify(json)); // ← ここ修正！
+  socket.send(JSON.stringify(json));
   document.getElementById('msgInput').value = '';
-
-  saveMessage(json);
-  displayMessage(json);
 }
+
 
 function displayMessage(json) {
   const chatDiv = document.getElementById('chat');
